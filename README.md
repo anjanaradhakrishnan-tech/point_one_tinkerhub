@@ -88,7 +88,7 @@ For Hardware:
 
 ### Project Demo
 # Video
-[Add your demo video link here]
+[Screen Recording 2026-09-12 040836.mp4]
 *Full walkthrough: entering a task, watching the DOLESS AI analysis run, the Final Directive card appearing, navigating to the 3D football game, attempting (and failing) to score, and returning via the back-link*
 
 # Additional Demos
