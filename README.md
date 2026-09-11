@@ -62,37 +62,10 @@ For Software:
 ![Screenshot3](Football_stadium.png)
 *The Unscoreable Football Challenge — 3D stadium, live scoreboard, and goalposts mid-flee*
 
-
-# Diagrams
-![Workflow](Add your workflow/architecture diagram here)
-*User flow: Homework input → Terminal → Analysis → Dashboard → Final Directive card → game.html → Back link → index.html*
-
-For Hardware:
-
-# Schematic & Circuit
-![Circuit](Add your circuit diagram here)
-*Add caption explaining connections*
-
-![Schematic](Add your schematic diagram here)
-*Add caption explaining the schematic*
-
-# Build Photos
-![Components](Add photo of your components here)
-*List out all components shown*
-
-![Build](Add photos of build process here)
-*Explain the build steps*
-
-![Final](Add photo of final product here)
-*Explain the final build*
-
 ### Project Demo
 # Video
 [https://drive.google.com/file/d/1vNrODRm5TFs2SXvy4GkkwEeBBANJ_AoB/view?usp=sharing]
 *Full walkthrough: entering a task, watching the DOLESS AI analysis run, the Final Directive card appearing, navigating to the 3D football game, attempting (and failing) to score, and returning via the back-link*
-
-# Additional Demos
-[Add any extra demo materials/links]
 
 ## Team Contributions
 - Anjana Radhakrishnan: DOLESS AI (Project A) and integration — HTML structure, CSS design system, JavaScript logic (terminal, analysis, chatbot, timer, leaderboard, modal), Final Directive card wiring, and project merge
