@@ -54,13 +54,13 @@ For Software:
 
 # Screenshots (Add at least 3)
 ![Screenshot1](Add screenshot 1 here with proper name)
-*DOLESS AI hero and homework input — the entry point where the avoidance begins*
+*DOLESS AI hero and homework input — the entry point where the avoidance begins*![](1.png)
 
 ![Screenshot2](Add screenshot 2 here with proper name)
 *The fake AI terminal typing out its eleven-step diagnostic, followed by the full analysis dashboard*
 
 ![Screenshot3](Add screenshot 3 here with proper name)
-*The Unscoreable Football Challenge — 3D stadium, live scoreboard, and goalposts mid-flee*
+*The Unscoreable Football Challenge — 3D stadium, live scoreboard, and goalposts mid-flee*(image.png)
 
 # Diagrams
 ![Workflow](Add your workflow/architecture diagram here)
