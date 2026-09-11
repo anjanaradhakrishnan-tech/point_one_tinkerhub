@@ -683,37 +683,6 @@
             </div>
 
 
-            <!-- ================= FINAL DIRECTIVE ================= -->
-
-            <div class="card final-directive-card hidden" id="finalDirectiveCard">
-
-                <div class="section-title">
-                    <span>12</span>
-                    FINAL DIRECTIVE
-                </div>
-
-                <p class="muted">
-                    Analysis complete. Studying is no longer recommended.
-                    Our systems have identified an alternative activity that is equally pointless —
-                    a fully functioning 3D football match where the goalposts physically flee the ball.
-                    Nobody has ever scored. Nobody ever will.
-                </p>
-
-                <p class="muted" style="margin-top: 12px;">
-                    Redirecting you to something equally unproductive.
-                </p>
-
-                <a
-                    id="playGameBtn"
-                    href="game.html"
-                    class="danger-btn final-directive-btn"
-                >
-                    🎮 PLAY INSTEAD
-                </a>
-
-            </div>
-
-
         </section>
 
     </main>
@@ -782,58 +751,6 @@
 
 
     <script src="script.js"></script>
-
-    <!-- ================= FINAL DIRECTIVE WIRING ================= -->
-    <script>
-        // Inject the Final Directive card after the dashboard animations settle.
-        // We wrap performAnalysis from script.js — the original is left untouched.
-        (function () {
-            var _original = window.performAnalysis;
-
-            function revealFinalDirective() {
-                var card = document.getElementById('finalDirectiveCard');
-                if (!card) return;
-                card.classList.remove('hidden');
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-                void card.offsetWidth; // force reflow
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-                setTimeout(function () {
-                    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 300);
-            }
-
-            window.performAnalysis = function (task) {
-                // Hide card on re-analyze
-                var card = document.getElementById('finalDirectiveCard');
-                if (card) {
-                    card.classList.add('hidden');
-                    card.style.cssText = '';
-                }
-                _original(task);
-                // Wait for score animation (~99 ticks × 15ms ≈ 1485ms) + buffer
-                setTimeout(revealFinalDirective, 1800);
-            };
-
-            // Re-bind analyzeBtn so it calls our patched performAnalysis.
-            // Clone removes the listener already attached by script.js.
-            var btn = document.getElementById('analyzeBtn');
-            if (btn) {
-                var newBtn = btn.cloneNode(true);
-                btn.parentNode.replaceChild(newBtn, btn);
-                newBtn.addEventListener('click', function () {
-                    var t = document.getElementById('taskInput').value.trim();
-                    if (!t) {
-                        alert('🚨 HOMEWORK NOT FOUND\n\nPlease enter a task you are supposed to do.');
-                        return;
-                    }
-                    runTerminal(t, function () { window.performAnalysis(t); });
-                });
-            }
-        })();
-    </script>
 
 </body>
 

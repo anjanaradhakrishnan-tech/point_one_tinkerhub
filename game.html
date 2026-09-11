@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Unscoreable Football Challenge</title>
+<style>
+  :root{
+    --navy:#0b1f33;
+    --navy-deep:#071523;
+    --pitch:#2e7d32;
+    --chalk:#f4f6f0;
+    --gold:#ffcf4d;
+    --red:#c0392b;
+    --blue:#2f6fd6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{width:100%; height:100%; overflow:hidden; background:var(--navy-deep); font-family:'Segoe UI', Arial, sans-serif;}
+  #canvasWrap{position:fixed; inset:0;}
+  canvas{display:block; width:100%; height:100%;}
+
+  /* ---------- HUD ---------- */
+  #hud{
+    position:fixed; top:0; left:0; right:0;
+    display:flex; justify-content:center;
+    pointer-events:none;
+    z-index:5;
+    padding-top:14px;
+  }
+  #scoreboard{
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:10px;
+    padding:10px 22px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5);
+    color:var(--chalk);
+  }
+  .sb-team{font-size:15px; font-weight:700; letter-spacing:0.5px; min-width:70px; text-align:center;}
+  .sb-team.home{color:var(--blue);}
+  .sb-team.away{color:var(--red);}
+  .sb-score{
+    font-size:26px; font-weight:800; letter-spacing:2px;
+    background:rgba(255,255,255,0.06);
+    padding:4px 14px; border-radius:6px;
+    font-variant-numeric:tabular-nums;
+  }
+  .sb-clock{font-size:15px; font-weight:700; color:var(--gold); min-width:60px; text-align:center; font-variant-numeric:tabular-nums;}
+  .sb-divider{width:1px; height:26px; background:rgba(255,255,255,0.15);}
+
+  #dodgeCounter{
+    position:fixed; top:14px; right:18px;
+    background:rgba(7,21,35,0.85);
+    border:1px solid rgba(255,207,77,0.4);
+    color:var(--gold);
+    padding:8px 14px; border-radius:8px;
+    font-size:13px; font-weight:700;
+    z-index:5; pointer-events:none;
+    text-align:right;
+  }
+  #dodgeCounter span{display:block; font-size:20px; color:var(--chalk);}
+
+  #controlsHint{
+    position:fixed; bottom:14px; left:18px;
+    background:rgba(7,21,35,0.75);
+    border:1px solid rgba(255,255,255,0.12);
+    color:var(--chalk);
+    padding:10px 14px; border-radius:8px;
+    font-size:12px; line-height:1.6;
+    z-index:5; pointer-events:none;
+    max-width:260px;
+  }
+  #controlsHint b{color:var(--gold);}
+
+  #messages{
+    position:fixed; top:90px; left:50%; transform:translateX(-50%);
+    z-index:6; pointer-events:none;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .toast{
+    background:rgba(255,207,77,0.95);
+    color:#1a1200;
+    font-weight:800;
+    font-size:17px;
+    padding:8px 20px;
+    border-radius:999px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.4);
+    opacity:0;
+    transform:translateY(-10px) scale(0.9);
+    animation:toastIn 0.35s ease forwards, toastOut 0.5s ease 1.8s forwards;
+    white-space:nowrap;
+  }
+  @keyframes toastIn{ to{opacity:1; transform:translateY(0) scale(1);} }
+  @keyframes toastOut{ to{opacity:0; transform:translateY(-14px) scale(0.9);} }
+
+  /* ---------- Start / End screens ---------- */
+  .overlay{
+    position:fixed; inset:0; z-index:20;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at center, rgba(11,31,51,0.92) 0%, rgba(4,10,18,0.97) 100%);
+  }
+  .panel{
+    max-width:560px; width:92%;
+    background:var(--navy);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:14px;
+    padding:34px 32px;
+    color:var(--chalk);
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  }
+  .panel h1{
+    font-size:28px; line-height:1.25;
+    margin-bottom:6px;
+    color:var(--chalk);
+  }
+  .panel h1 em{color:var(--gold); font-style:normal;}
+  .panel p.tag{color:#9fb4c8; font-size:14px; margin-bottom:20px;}
+  .rule{
+    display:flex; gap:10px; align-items:flex-start;
+    margin-bottom:10px; font-size:13.5px; color:#dce6ee;
+  }
+  .rule .dot{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--gold); margin-top:6px; flex:none;
+  }
+  .keys{
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:6px 18px; margin:18px 0 22px 0;
+    font-size:13px; color:#dce6ee;
+  }
+  .keys kbd{
+    background:#132b45; border:1px solid rgba(255,255,255,0.18);
+    border-radius:4px; padding:2px 7px; font-size:12px; color:var(--gold);
+    font-family:inherit;
+  }
+  #startBtn, #restartBtn{
+    width:100%; padding:13px; font-size:16px; font-weight:700;
+    background:var(--gold); color:#1a1200; border:none; border-radius:8px;
+    cursor:pointer; letter-spacing:0.3px;
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  #startBtn:hover, #restartBtn:hover{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(255,207,77,0.3);}
+  #endScreen{display:none;}
+  #endScreen .final{font-size:15px; color:#9fb4c8; margin-bottom:18px;}
+  #endScreen .final b{color:var(--gold); font-size:22px;}
+</style>
+</head>
+<body>
+
+<!-- ← BACK LINK (added for Project A→B integration) -->
+<a id="backToDoless" href="index.html" style="
+    position: fixed;
+    bottom: 14px;
+    right: 18px;
+    z-index: 10;
+    background: rgba(7,21,35,0.85);
+    border: 1px solid rgba(255,207,77,0.4);
+    color: var(--gold);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    transition: background 0.2s, border-color 0.2s;
+    pointer-events: auto;
+">← back to being unproductive</a>
+
+<div id="canvasWrap"></div>
+
+
+<div id="hud">
+  <div id="scoreboard">
+    <div class="sb-team home">USER</div>
+    <div class="sb-score" id="scoreText">0&nbsp;–&nbsp;0</div>
+    <div class="sb-team away">AI</div>
+    <div class="sb-divider"></div>
+    <div class="sb-clock" id="clockText">00:00</div>
+  </div>
+</div>
+
+<div id="dodgeCounter">GOALPOSTS DODGED<span id="dodgeText">0</span></div>
+
+<div id="controlsHint">
+  <b>WASD / Arrows</b> — move<br>
+  <b>Space / K</b> — power shot<br>
+  <b>J</b> — short pass<br>
+  <b>L</b> — switch player / slide tackle
+</div>
+
+<div id="messages"></div>
+
+<div class="overlay" id="startScreen">
+  <div class="panel">
+    <h1>The <em>Unscoreable</em> Football Challenge</h1>
+    <p class="tag">A full 90 minutes. Two teams. Zero possible goals.</p>
+    <div class="rule"><div class="dot"></div>Play a 6-a-side match in a full 3D stadium — dribble, pass, tackle and shoot exactly like a real match.</div>
+    <div class="rule"><div class="dot"></div>The instant the ball gets close to either goal, the posts panic and slide out of the way. The ball sails through into an empty goal-shaped gap. No goal. Ever.</div>
+    <div class="rule"><div class="dot"></div>Every dodge is tracked on the scoreboard, because the final score never will be.</div>
+    <div class="keys">
+      <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move active player</div>
+      <div><kbd>Space</kbd> / <kbd>K</kbd> power shot</div>
+      <div><kbd>J</kbd> short pass</div>
+      <div><kbd>L</kbd> switch player / tackle</div>
+    </div>
+    <button id="startBtn">Kick Off</button>
+  </div>
+</div>
+
+<div class="overlay" id="endScreen">
+  <div class="panel">
+    <h1>Full <em>Time</em></h1>
+    <div class="final">Final score, as always — <b>0 – 0</b>.<br>Goalposts dodged: <b id="finalDodges">0</b></div>
+    <button id="restartBtn">Play Again</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+
+/* =========================================================================
+   THE UNSCOREABLE FOOTBALL CHALLENGE
+   Self-contained Three.js 3D football game.
+   Scope note: a true 11v11 with fully rigged skeletal animation is not
+   feasible in a single browser-run file at real-time framerates, so this
+   plays 6-a-side (1 GK + 5 outfield per team) on a full-size pitch, with
+   stylised procedurally-animated players. Every system in the brief —
+   stadium, dynamic dodging goalposts, AI, controls, HUD, audio — is real
+   and playable. TEAM_SIZE below can be raised if you want to push it further.
+   ========================================================================= */
+
+// ---------------------------------------------------------------- CONSTANTS
+const FIELD_L = 100;         // pitch length (x axis)
+const FIELD_W = 64;          // pitch width  (z axis)
+const GOAL_W  = 9;           // goal mouth width
+const GOAL_H  = 3.2;         // goal height
+const DODGE_RADIUS = 15;     // how close the ball must get to trigger a dodge
+const TEAM_SIZE = 6;         // 1 GK + 5 outfield per side
+const TIME_SCALE = 16;       // game-seconds per real-second (90min -> ~5.6 real min)
+const MATCH_DURATION = 90*60;
+
+const TOASTS = [
+  "Nice try! The goalpost ran away!",
+  "Defying physics!",
+  "Goalpost: not today!",
+  "The net just isn't feeling it.",
+  "GOAL... post has left the building.",
+  "That post has commitment issues.",
+  "Somewhere, a physics teacher is crying.",
+  "The crossbar filed a restraining order.",
+  "Still 0-0. It's tradition now.",
+  "The goal dodged like it owed the ball money.",
+  "Unbelievable! The post just teleported!",
+  "That's the fastest a goalpost has ever moved.",
+];
+
+// ------------------------------------------------------------------ STATE
+let scene, camera, renderer, clock;
+let ball, goals, players = [], userTeam = [], aiTeam = [];
+let activeIndex = 0;
+let keys = {};
+let dodgeCount = 0;
+let matchTime = 0;
+let matchRunning = false;
+let kickoffTimer = 0;
+let audioCtx = null, crowdGain = null;
+let lastToastAt = -999;
+
+// convenience vectors reused to avoid GC churn
+const V1 = new THREE.Vector3(), V2 = new THREE.Vector3(), V3 = new THREE.Vector3();
+
+// ============================================================== BOOTSTRAP
+window.addEventListener('load', () => {
+  document.getElementById('startBtn').addEventListener('click', startMatch);
+  document.getElementById('restartBtn').addEventListener('click', () => location.reload());
+  window.addEventListener('keydown', e => {
+    keys[e.code] = true;
+    if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  });
+  window.addEventListener('keyup', e => { keys[e.code] = false; });
+  initScene();
+  animate(); // renders idle scene behind the start screen too
+});
+
+function startMatch(){
+  document.getElementById('startScreen').style.display = 'none';
+  initAudio();
+  kickoffTimer = 1.2;
+  matchRunning = true;
+}
+
+// ================================================================ SCENE
+function initScene(){
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0c1b2b);
+  scene.fog = new THREE.Fog(0x0c1b2b, 140, 420);
+
+  camera = new THREE.PerspectiveCamera(58, window.innerWidth/window.innerHeight, 0.1, 2000);
+  camera.position.set(0, 24, 60);
+  camera.lookAt(0, 0, 0);
+
+  renderer = new THREE.WebGLRenderer({ antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.getElementById('canvasWrap').appendChild(renderer.domElement);
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  buildLights();
+  buildPitch();
+  buildStadium();
+  goals = { left: buildGoal(-FIELD_L/2), right: buildGoal(FIELD_L/2) };
+  buildTeams();
+  ball = buildBall();
+
+  clock = new THREE.Clock();
+}
+
+function buildLights(){
+  const hemi = new THREE.HemisphereLight(0xbfd9ff, 0x223322, 0.55);
+  scene.add(hemi);
+
+  const sun = new THREE.DirectionalLight(0xfff2d8, 0.65);
+  sun.position.set(60, 90, 30);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -80; sun.shadow.camera.right = 80;
+  sun.shadow.camera.top = 70; sun.shadow.camera.bottom = -70;
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 260;
+  scene.add(sun);
+
+  // four floodlight towers
+  const towerPositions = [
+    [-FIELD_L/2-14, 0, -FIELD_W/2-10],
+    [ FIELD_L/2+14, 0, -FIELD_W/2-10],
+    [-FIELD_L/2-14, 0,  FIELD_W/2+10],
+    [ FIELD_L/2+14, 0,  FIELD_W/2+10],
+  ];
+  const poleMat = new THREE.MeshStandardMaterial({ color:0x555b63, roughness:0.6, metalness:0.4 });
+  const lampMat = new THREE.MeshStandardMaterial({ color:0xffffff, emissive:0xfff3cf, emissiveIntensity:1.2 });
+  towerPositions.forEach(([x,y,z]) => {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.6,34,8), poleMat);
+    pole.position.set(x, 17, z);
+    pole.castShadow = true;
+    scene.add(pole);
+    const rig = new THREE.Mesh(new THREE.BoxGeometry(6,2.4,1.2), poleMat);
+    rig.position.set(x, 33, z);
+    rig.lookAt(0, 10, 0);
+    scene.add(rig);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.5,6,6), lampMat);
+    lamp.position.set(x, 33, z);
+    scene.add(lamp);
+    const spot = new THREE.SpotLight(0xfff6df, 1.3, 220, Math.PI/5, 0.5, 1.2);
+    spot.position.set(x, 33, z);
+    spot.target.position.set(x*0.3, 0, z*0.3);
+    spot.castShadow = false;
+    scene.add(spot);
+    scene.add(spot.target);
+  });
+}
+
+function makePitchTexture(){
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 656;
+  const ctx = c.getContext('2d');
+  const sx = c.width/FIELD_L, sz = c.height/FIELD_W;
+  // mowed stripes
+  const stripes = 16;
+  for (let i=0;i<stripes;i++){
+    ctx.fillStyle = i%2===0 ? '#2d7a31' : '#2a7a2d';
+    ctx.fillRect(i*(c.width/stripes), 0, c.width/stripes+1, c.height);
+  }
+  // markings
+  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+  ctx.lineWidth = 4;
+  const pad = 14;
+  ctx.strokeRect(pad, pad, c.width-pad*2, c.height-pad*2);
+  ctx.beginPath(); ctx.moveTo(c.width/2, pad); ctx.lineTo(c.width/2, c.height-pad); ctx.stroke();
+  ctx.beginPath(); ctx.arc(c.width/2, c.height/2, 9*sx, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(c.width/2, c.height/2, 2.2, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  // penalty + six-yard boxes both ends
+  [pad, c.width-pad].forEach((edgeX, idx) => {
+    const dir = idx===0 ? 1 : -1;
+    const boxW = 18*sx, boxH = 44*sz;
+    const smallW = 6*sx, smallH = 20*sz;
+    ctx.strokeRect(edgeX, c.height/2-boxH/2, dir*boxW, boxH);
+    ctx.strokeRect(edgeX, c.height/2-smallH/2, dir*smallW, smallH);
+    ctx.beginPath();
+    ctx.arc(edgeX+dir*12*sx, c.height/2, 1.8, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    // corner arcs
+    ctx.beginPath();
+    const cy0 = pad, cy1 = c.height-pad;
+    ctx.arc(edgeX, cy0, 3*sx, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(edgeX, cy1, 3*sx, 0, Math.PI*2); ctx.stroke();
+  });
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = 4;
+  return tex;
+}
+
+function buildPitch(){
+  const tex = makePitchTexture();
+  const geo = new THREE.PlaneGeometry(FIELD_L+2, FIELD_W+2);
+  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness:0.95 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.x = -Math.PI/2;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+
+  // surrounding ground so the stadium doesn't float in void
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(600,600), new THREE.MeshStandardMaterial({color:0x1a2b1a, roughness:1}));
+  ground.rotation.x = -Math.PI/2;
+  ground.position.y = -0.05;
+  ground.receiveShadow = true;
+  scene.add(ground);
+}
+
+function makeCrowdTexture(){
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#12233a'; ctx.fillRect(0,0,c.width,c.height);
+  const colors = ['#d64545','#e0b23a','#3a7bd6','#e8e8e8','#2fae5c','#c0392b','#f1c40f'];
+  for (let y=0;y<c.height;y+=4){
+    for (let x=0;x<c.width;x+=3){
+      if (Math.random() < 0.85){
+        ctx.fillStyle = colors[(Math.random()*colors.length)|0];
+        ctx.fillRect(x + Math.random()*1.5, y + Math.random()*1.5, 2, 2);
+      }
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(10, 2);
+  return tex;
+}
+
+function buildStadium(){
+  const crowdTex = makeCrowdTexture();
+  const crowdMat = new THREE.MeshStandardMaterial({ map: crowdTex, roughness:1 });
+  const standMat = new THREE.MeshStandardMaterial({ color:0x2a2f38, roughness:0.9 });
+
+  function stand(x, z, w, d, rotY){
+    const g = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(w, 6, d), standMat);
+    base.position.y = 3;
+    base.castShadow = true; base.receiveShadow = true;
+    g.add(base);
+    const tiers = new THREE.Mesh(new THREE.BoxGeometry(w*0.96, 9, d*0.7), crowdMat);
+    tiers.position.set(0, 10, -d*0.1);
+    tiers.rotation.x = -0.18;
+    g.add(tiers);
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(w*1.02, 0.6, d*0.9), standMat);
+    roof.position.set(0, 16.5, -d*0.05);
+    roof.rotation.x = -0.18;
+    roof.castShadow = true;
+    g.add(roof);
+    g.position.set(x, 0, z);
+    g.rotation.y = rotY;
+    scene.add(g);
+  }
+  // long sides
+  stand(0, -FIELD_W/2-16, FIELD_L+30, 22, 0);
+  stand(0,  FIELD_W/2+16, FIELD_L+30, 22, Math.PI);
+  // short ends
+  stand(-FIELD_L/2-20, 0, FIELD_W+34, 22, Math.PI/2);
+  stand( FIELD_L/2+20, 0, FIELD_W+34, 22, -Math.PI/2);
+}
+
+// --------------------------------------------------------------- GOAL(S)
+function buildGoal(x){
+  const side = Math.sign(x); // -1 left goal, +1 right goal
+  const group = new THREE.Group();
+  group.position.set(x, 0, 0);
+  scene.add(group);
+
+  const postMat = new THREE.MeshStandardMaterial({ color:0xf4f6f0, roughness:0.35, metalness:0.1 });
+  const netMat = new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.28, side:THREE.DoubleSide, wireframe:true });
+
+  const postR = 0.14;
+  const leftPost = new THREE.Mesh(new THREE.CylinderGeometry(postR,postR,GOAL_H,10), postMat);
+  leftPost.position.set(0, GOAL_H/2, -GOAL_W/2);
+  leftPost.castShadow = true;
+  const rightPost = leftPost.clone();
+  rightPost.position.z = GOAL_W/2;
+  const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(postR,postR,GOAL_W,10), postMat);
+  crossbar.rotation.x = Math.PI/2;
+  crossbar.position.set(0, GOAL_H, 0);
+  crossbar.castShadow = true;
+
+  // simple net backdrop (depth toward own end-line)
+  const netDepth = 2.6;
+  const backNet = new THREE.Mesh(new THREE.PlaneGeometry(GOAL_W, GOAL_H, 10, 6), netMat);
+  backNet.position.set(side*netDepth, GOAL_H/2, 0);
+  backNet.rotation.y = Math.PI/2;
+  const topNet = new THREE.Mesh(new THREE.PlaneGeometry(netDepth, GOAL_W, 4, 10), netMat);
+  topNet.position.set(side*netDepth/2, GOAL_H, 0);
+  topNet.rotation.x = Math.PI/2;
+  const sideNetA = new THREE.Mesh(new THREE.PlaneGeometry(netDepth, GOAL_H, 4, 6), netMat);
+  sideNetA.position.set(side*netDepth/2, GOAL_H/2, -GOAL_W/2);
+  const sideNetB = sideNetA.clone();
+  sideNetB.position.z = GOAL_W/2;
+
+  group.add(leftPost, rightPost, crossbar, backNet, topNet, sideNetA, sideNetB);
+
+  return {
+    group, side, restX: x,
+    state: 'idle',           // idle | dodging | away | returning
+    targetZ: 0,
+    timer: 0,
+  };
+}
+
+function updateGoal(g, dt){
+  const speed = 26; // slide speed units/sec
+  if (g.state === 'dodging' || g.state === 'returning'){
+    const dz = g.targetZ - g.group.position.z;
+    const step = Math.sign(dz) * Math.min(Math.abs(dz), speed*dt);
+    g.group.position.z += step;
+    if (Math.abs(g.targetZ - g.group.position.z) < 0.1){
+      g.group.position.z = g.targetZ;
+      if (g.state === 'dodging'){ g.state = 'away'; g.timer = 0; }
+      else { g.state = 'idle'; }
+    }
+  } else if (g.state === 'away'){
+    g.timer += dt;
+    const dGoal = Math.hypot(ball.pos.x - g.restX, ball.pos.z);
+    const movingAway = (ball.vel.x * -g.side) < -1; // ball heading away from this goal
+    if (g.timer > 0.6 && (dGoal > DODGE_RADIUS*1.5 || movingAway)){
+      g.state = 'returning';
+      g.targetZ = 0;
+    }
+  }
+}
+
+function checkGoalDodge(g){
+  if (g.state !== 'idle') return;
+  const goalPointZ = Math.max(-GOAL_W/2, Math.min(GOAL_W/2, ball.pos.z));
+  const dx = ball.pos.x - g.restX;
+  const dz = ball.pos.z - goalPointZ;
+  const dist = Math.hypot(dx, dz);
+  const approaching = (ball.vel.x * -g.side) > 3; // moving toward this goal's side
+  if (dist < DODGE_RADIUS && approaching){
+    g.state = 'dodging';
+    const slideDir = ball.pos.z >= 0 ? -1 : 1; // dodge away from the ball's side
+    g.targetZ = slideDir * (GOAL_W/2 + 9);
+    dodgeCount++;
+    document.getElementById('dodgeText').textContent = dodgeCount;
+    showToast(TOASTS[(Math.random()*TOASTS.length)|0]);
+    playWhoosh();
+  }
+}
+
+// -------------------------------------------------------------- BALL
+function makeBallTexture(){
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#f2f2f2'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle = '#171717';
+  function pentagon(cx, cy, r){
+    ctx.beginPath();
+    for (let i=0;i<5;i++){
+      const a = -Math.PI/2 + i*(Math.PI*2/5);
+      const px = cx + r*Math.cos(a), py = cy + r*Math.sin(a);
+      if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath(); ctx.fill();
+  }
+  const rows = [ [0.15,5],[0.5,6],[0.85,5] ];
+  rows.forEach(([fy,count])=>{
+    for (let i=0;i<count;i++){
+      const fx = (i+0.5)/count;
+      pentagon(fx*c.width, fy*c.height, 22);
+    }
+  });
+  const tex = new THREE.CanvasTexture(c);
+  return tex;
+}
+
+function buildBall(){
+  const tex = makeBallTexture();
+  const geo = new THREE.SphereGeometry(0.35, 20, 20);
+  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness:0.5, metalness:0.05 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  mesh.position.set(0, 0.35, 0);
+  scene.add(mesh);
+  return {
+    mesh, radius:0.35,
+    pos: new THREE.Vector3(0,0.35,0),
+    vel: new THREE.Vector3(0,0,0),
+    velY: 0,
+    possessor: null,
+  };
+}
+
+// ------------------------------------------------------------- PLAYERS
+function makeNumberTexture(num, bg){
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,64,64);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 38px Arial';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(num), 32, 34);
+  return new THREE.CanvasTexture(c);
+}
+
+function buildPlayer(team, role, number){
+  const jerseyColor = role==='GK' ? (team==='user'?0xffd23f:0x2fae5c) : (team==='user'?0x2f6fd6:0xc0392b);
+  const shortsColor = team==='user' ? 0x14356b : 0x5c1710;
+  const skin = 0xe0ac7a;
+
+  const g = new THREE.Group();
+
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.4,0.85,10), new THREE.MeshStandardMaterial({color:jerseyColor, roughness:0.7}));
+  torso.position.y = 1.15;
+  torso.castShadow = true;
+  g.add(torso);
+
+  const numMat = new THREE.MeshBasicMaterial({ map: makeNumberTexture(number, '#00000000'), transparent:true });
+  const numPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.4,0.4), numMat);
+  numPlane.position.set(0, 1.2, 0.41);
+  g.add(numPlane);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.24,10,10), new THREE.MeshStandardMaterial({color:skin, roughness:0.8}));
+  head.position.y = 1.78;
+  head.castShadow = true;
+  g.add(head);
+
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.25,10,10,0,Math.PI*2,0,Math.PI/1.7), new THREE.MeshStandardMaterial({color:0x2b1b12}));
+  hair.position.y = 1.8;
+  g.add(hair);
+
+  const legMat = new THREE.MeshStandardMaterial({ color: shortsColor, roughness:0.8 });
+  function makeLeg(sideSign){
+    const leg = new THREE.Group();
+    leg.position.set(0, 0.78, sideSign*0.14);
+    const geo = new THREE.CylinderGeometry(0.1,0.09,0.78,8);
+    const mesh = new THREE.Mesh(geo, legMat);
+    mesh.position.y = -0.39;
+    mesh.castShadow = true;
+    leg.add(mesh);
+    return leg;
+  }
+  const legL = makeLeg(-1), legR = makeLeg(1);
+  g.add(legL, legR);
+
+  const armMat = new THREE.MeshStandardMaterial({ color: jerseyColor, roughness:0.7 });
+  function makeArm(sideSign){
+    const arm = new THREE.Group();
+    arm.position.set(0, 1.5, sideSign*0.42);
+    const geo = new THREE.CylinderGeometry(0.08,0.07,0.62,8);
+    const mesh = new THREE.Mesh(geo, armMat);
+    mesh.position.y = -0.31;
+    mesh.castShadow = true;
+    arm.add(mesh);
+    return arm;
+  }
+  const armL = makeArm(-1), armR = makeArm(1);
+  g.add(armL, armR);
+
+  scene.add(g);
+
+  return {
+    group:g, legL, legR, armL, armR,
+    team, role, number,
+    pos: new THREE.Vector3(0,0,0),
+    vel: new THREE.Vector3(0,0,0),
+    facing: new THREE.Vector3(team==='user'?1:-1, 0, 0),
+    speed: role==='GK' ? 4.2 : (5.6 + Math.random()*0.8),
+    animPhase: Math.random()*10,
+    cooldown: 0,
+  };
+}
+
+// simple 1-GK + 5-outfield formation, dx measured forward from own goal line
+const FORMATION = [
+  { role:'GK',  dx:2,  dz:0 },
+  { role:'OUT', dx:16, dz:-13 },
+  { role:'OUT', dx:16, dz:13 },
+  { role:'OUT', dx:32, dz:-9 },
+  { role:'OUT', dx:32, dz:9 },
+  { role:'OUT', dx:44, dz:0 },
+];
+
+function buildTeams(){
+  FORMATION.forEach((f, i) => {
+    const uX = -FIELD_L/2 + f.dx;
+    const up = buildPlayer('user', f.role, i+1);
+    up.homeOffset = new THREE.Vector3(uX, 0, f.dz);
+    up.pos.set(uX, 0, f.dz);
+    userTeam.push(up); players.push(up);
+
+    const aX = FIELD_L/2 - f.dx;
+    const ap = buildPlayer('ai', f.role, i+1);
+    ap.homeOffset = new THREE.Vector3(aX, 0, f.dz);
+    ap.pos.set(aX, 0, f.dz);
+    aiTeam.push(ap); players.push(ap);
+  });
+  activeIndex = 5; // most advanced outfield user player
+  userTeam[activeIndex].isActive = true;
+}
+
+// =============================================================== INPUT
+function readMoveVector(){
+  let x=0, z=0;
+  if (keys['KeyW']||keys['ArrowUp']) x -= 1;
+  if (keys['KeyS']||keys['ArrowDown']) x += 1;
+  if (keys['KeyA']||keys['ArrowLeft']) z -= 1;
+  if (keys['KeyD']||keys['ArrowRight']) z += 1;
+  // world mapping: forward (toward AI goal, +x) is "up/W" intuitively for user team -> invert so W = toward AI goal
+  return { x:-x, z };
+}
+
+let prevSpace=false, prevJ=false, prevL=false;
+function handleActions(dt, active){
+  const space = keys['Space']||keys['KeyK'];
+  const jKey = keys['KeyJ'];
+  const lKey = keys['KeyL'];
+
+  if (space && !prevSpace) doShoot(active);
+  if (jKey && !prevJ) doPass(active);
+  if (lKey && !prevL) doSwitchOrTackle(active);
+
+  prevSpace = space; prevJ = jKey; prevL = lKey;
+}
+
+function doShoot(active){
+  if (ball.possessor !== active) return;
+  const dir = active.facing.clone().setY(0).normalize();
+  ball.vel.set(dir.x*30, 0, dir.z*30);
+  ball.velY = 7.5;
+  ball.possessor = null;
+  playKick();
+}
+
+function doPass(active){
+  if (ball.possessor !== active) return;
+  const mates = userTeam.filter(p => p !== active);
+  let best=null, bestScore=-Infinity;
+  mates.forEach(m => {
+    const toM = m.pos.clone().sub(active.pos);
+    const d = toM.length();
+    if (d < 0.1) return;
+    toM.normalize();
+    const align = toM.dot(active.facing);
+    const score = align*3 - d*0.05;
+    if (score > bestScore){ bestScore = score; best = m; }
+  });
+  if (!best) return;
+  const dir = best.pos.clone().sub(active.pos).setY(0).normalize();
+  ball.vel.set(dir.x*17, 0, dir.z*17);
+  ball.velY = 2.2;
+  ball.possessor = null;
+  playKick(0.55);
+}
+
+function doSwitchOrTackle(active){
+  // tackle if an AI possessor is close
+  if (ball.possessor && ball.possessor.team === 'ai'){
+    const d = active.pos.distanceTo(ball.possessor.pos);
+    if (d < 1.6){
+      ball.possessor.cooldown = 1.2;
+      ball.possessor = active;
+      playKick(0.4);
+      return;
+    }
+  }
+  // else switch active player to whoever on user team is nearest the ball
+  let best=null, bestD=Infinity;
+  userTeam.forEach(p => {
+    const d = p.pos.distanceTo(ball.pos);
+    if (d < bestD){ bestD=d; best=p; }
+  });
+  if (best && best !== active){
+    active.isActive = false;
+    best.isActive = true;
+    activeIndex = userTeam.indexOf(best);
+  }
+}
+
+// ================================================================ AI
+function updateAIOpponents(dt){
+  let attacker=null, bestD=Infinity;
+  aiTeam.forEach(p => {
+    if (p.role==='GK') return;
+    const d = p.pos.distanceTo(ball.pos);
+    if (d < bestD){ bestD=d; attacker=p; }
+  });
+
+  aiTeam.forEach(p => {
+    if (p.role === 'GK'){
+      const targetZ = Math.max(-GOAL_W/2+0.5, Math.min(GOAL_W/2-0.5, ball.pos.z));
+      const target = new THREE.Vector3(p.homeOffset.x, 0, targetZ);
+      moveToward(p, target, dt, p.speed*0.9);
+      return;
+    }
+    if (p === attacker && p.cooldown<=0){
+      if (ball.possessor === p){
+        // dribble toward user goal with a little zig-zag
+        const goalTarget = new THREE.Vector3(-FIELD_L/2+3, 0, Math.sin(performance.now()*0.001 + p.animPhase)*8);
+        moveToward(p, goalTarget, dt, p.speed*0.85);
+        const distToGoal = p.pos.distanceTo(new THREE.Vector3(-FIELD_L/2,0,0));
+        if (distToGoal < 26 && Math.random() < 0.01){
+          const dir = new THREE.Vector3(-1,0, (Math.random()-0.5)*0.6).normalize();
+          ball.vel.set(dir.x*26, 0, dir.z*26);
+          ball.velY = 6;
+          ball.possessor = null;
+          p.cooldown = 1;
+        }
+      } else {
+        moveToward(p, ball.pos, dt, p.speed);
+      }
+    } else {
+      const shift = new THREE.Vector3((ball.pos.x - 0)*0.12, 0, (ball.pos.z)*0.15);
+      const target = p.homeOffset.clone().add(shift);
+      moveToward(p, target, dt, p.speed*0.7);
+    }
+    if (p.cooldown>0) p.cooldown -= dt;
+  });
+}
+
+function updateUserTeammates(dt, active){
+  userTeam.forEach(p => {
+    if (p === active) return;
+    if (p.role === 'GK'){
+      const targetZ = Math.max(-GOAL_W/2+0.5, Math.min(GOAL_W/2-0.5, ball.pos.z));
+      const target = new THREE.Vector3(p.homeOffset.x, 0, targetZ);
+      moveToward(p, target, dt, p.speed*0.9);
+      return;
+    }
+    const shift = new THREE.Vector3((ball.pos.x)*0.12, 0, (ball.pos.z)*0.15);
+    const target = p.homeOffset.clone().add(shift);
+    moveToward(p, target, dt, p.speed*0.65);
+  });
+}
+
+function moveToward(p, target, dt, speed){
+  const diff = target.clone().sub(p.pos); diff.y = 0;
+  const d = diff.length();
+  if (d > 0.3){
+    diff.normalize();
+    p.vel.set(diff.x*speed, 0, diff.z*speed);
+    p.pos.addScaledVector(diff, speed*dt);
+    p.facing.copy(diff);
+  } else {
+    p.vel.set(0,0,0);
+  }
+  clampToField(p.pos);
+}
+
+function clampToField(pos){
+  pos.x = Math.max(-FIELD_L/2-3, Math.min(FIELD_L/2+3, pos.x));
+  pos.z = Math.max(-FIELD_W/2+0.5, Math.min(FIELD_W/2-0.5, pos.z));
+}
+
+// ============================================================ BALL SIM
+function updateBall(dt){
+  if (ball.possessor){
+    const p = ball.possessor;
+    // interception: any opposing player in contact steals the ball
+    let stealer=null, bestD=0.85;
+    players.forEach(o => {
+      if (o.team === p.team || o.cooldown > 0) return;
+      const d = Math.hypot(o.pos.x-p.pos.x, o.pos.z-p.pos.z);
+      if (d < bestD){ bestD=d; stealer=o; }
+    });
+    if (stealer){
+      p.cooldown = 0.5;
+      ball.possessor = stealer;
+      playKick(0.4);
+      if (stealer.team === 'user' && !stealer.isActive){
+        const prevActive = userTeam[activeIndex];
+        if (prevActive) prevActive.isActive = false;
+        stealer.isActive = true;
+        activeIndex = userTeam.indexOf(stealer);
+      }
+    }
+    const offset = ball.possessor.facing.clone().setY(0).normalize().multiplyScalar(0.65);
+    ball.pos.copy(ball.possessor.pos).add(offset);
+    ball.pos.y = 0.35;
+    ball.vel.copy(ball.possessor.vel);
+    ball.velY = 0;
+  } else {
+    ball.pos.x += ball.vel.x*dt;
+    ball.pos.z += ball.vel.z*dt;
+    ball.vel.multiplyScalar(Math.max(0, 1 - 0.7*dt));
+
+    ball.velY += -22*dt;
+    ball.pos.y += ball.velY*dt;
+    if (ball.pos.y < 0.35){
+      ball.pos.y = 0.35;
+      if (Math.abs(ball.velY) > 0.6) ball.velY = -ball.velY*0.4; else ball.velY = 0;
+    }
+
+    // capture check
+    let captor=null, bestD=0.95;
+    players.forEach(p => {
+      if (p.cooldown>0) return;
+      const d = Math.hypot(p.pos.x-ball.pos.x, p.pos.z-ball.pos.z);
+      if (d < bestD){ bestD=d; captor=p; }
+    });
+    if (captor && ball.pos.y < 0.9){
+      // only AI attacker or user active player can pick up automatically
+      const isUserActive = captor.isActive;
+      const isAIAttacker = captor.team === 'ai' && captor.role !== 'GK';
+      const isGKNearOwnGoal = captor.role === 'GK';
+      if (isUserActive || isAIAttacker || isGKNearOwnGoal){
+        ball.possessor = captor;
+      }
+    }
+  }
+
+  // out of bounds (sidelines / behind goal but not through a dodged goal mouth)
+  if (Math.abs(ball.pos.z) > FIELD_W/2+1){
+    resetBall(new THREE.Vector3(ball.pos.x, 0.35, Math.sign(ball.pos.z)*(FIELD_W/2-0.5)));
+    showToast('Out of bounds! Throw-in.');
+  } else if (Math.abs(ball.pos.x) > FIELD_L/2+3){
+    const nearGoal = (goals.left.state!=='idle' && ball.pos.x < -FIELD_L/2) || (goals.right.state!=='idle' && ball.pos.x > FIELD_L/2);
+    if (nearGoal){
+      showToast('Goal kick — the post dodged clean out of the way!');
+    } else {
+      showToast('Out of bounds! Goal kick.');
+    }
+    resetBall(new THREE.Vector3(Math.sign(ball.pos.x)*(FIELD_L/2-8), 0.35, 0));
+  }
+
+  ball.mesh.position.copy(ball.pos);
+  const spinAxis = new THREE.Vector3(-ball.vel.z, 0, ball.vel.x);
+  if (spinAxis.lengthSq() > 0.0001){
+    ball.mesh.rotateOnWorldAxis(spinAxis.normalize(), ball.vel.length()*dt*1.6);
+  }
+}
+
+function resetBall(pos){
+  ball.pos.copy(pos);
+  ball.vel.set(0,0,0);
+  ball.velY = 0;
+  ball.possessor = null;
+}
+
+// ============================================================ ANIMATION
+function animatePlayer(p, dt, t){
+  p.group.position.copy(p.pos);
+  const speed = Math.hypot(p.vel.x, p.vel.z);
+  if (speed > 0.3){
+    const yaw = Math.atan2(p.facing.x, p.facing.z);
+    p.group.rotation.y = yaw;
+    p.animPhase += dt*speed*3.2;
+    const swing = Math.sin(p.animPhase)*0.55;
+    p.legL.rotation.x = swing;
+    p.legR.rotation.x = -swing;
+    p.armL.rotation.x = -swing*0.8;
+    p.armR.rotation.x = swing*0.8;
+    p.group.position.y = Math.abs(Math.sin(p.animPhase))*0.06;
+  } else {
+    p.legL.rotation.x *= 0.8; p.legR.rotation.x *= 0.8;
+    p.armL.rotation.x *= 0.8; p.armR.rotation.x *= 0.8;
+    p.group.position.y = 0;
+  }
+  // highlight ring under active user player
+  if (p.isActive){
+    if (!p.ring){
+      p.ring = new THREE.Mesh(new THREE.RingGeometry(0.55,0.7,24), new THREE.MeshBasicMaterial({color:0xffd23f, side:THREE.DoubleSide, transparent:true, opacity:0.85}));
+      p.ring.rotation.x = -Math.PI/2;
+      p.ring.position.y = 0.03;
+      p.group.add(p.ring);
+    }
+  }
+}
+
+// =============================================================== CAMERA
+let cameraInitialized = false;
+function updateCamera(dt){
+  const active = userTeam[activeIndex];
+  const behind = active.facing.clone().setY(0).normalize().multiplyScalar(-9);
+  const desired = active.pos.clone().add(behind).add(new THREE.Vector3(0, 6.5, 0));
+  if (!cameraInitialized){ camera.position.copy(desired); cameraInitialized = true; }
+  else camera.position.lerp(desired, Math.min(1, dt*3));
+  const lookAt = active.pos.clone().add(active.facing.clone().setY(0).multiplyScalar(6)).add(new THREE.Vector3(0,1.4,0));
+  V1.copy(camera.position).add(new THREE.Vector3(0,0,0));
+  const currentLook = V2.copy(active.pos).setY(1.4);
+  camera.lookAt(currentLook.lerp(lookAt, 0.5));
+}
+
+// ================================================================ HUD
+function showToast(text){
+  const now = performance.now();
+  if (now - lastToastAt < 300) return; // avoid spam
+  lastToastAt = now;
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = text;
+  const wrap = document.getElementById('messages');
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 2400);
+}
+
+function updateHUD(){
+  const t = Math.floor(matchTime);
+  const mm = String(Math.floor(t/60)).padStart(2,'0');
+  const ss = String(t%60).padStart(2,'0');
+  document.getElementById('clockText').textContent = mm+':'+ss;
+}
+
+// =============================================================== AUDIO
+function initAudio(){
+  try{
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    startCrowd();
+    playWhistle();
+  }catch(e){ /* audio not available; game still playable */ }
+}
+
+function startCrowd(){
+  if (!audioCtx) return;
+  const bufferSize = audioCtx.sampleRate*2;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1)*0.5;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer; src.loop = true;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass'; filter.frequency.value = 500; filter.Q.value = 0.6;
+  crowdGain = audioCtx.createGain();
+  crowdGain.gain.value = 0.045;
+  src.connect(filter).connect(crowdGain).connect(audioCtx.destination);
+  src.start();
+}
+
+function playKick(vol){
+  if (!audioCtx) return;
+  const g = audioCtx.createGain();
+  g.gain.value = 0.5*(vol||1);
+  const osc = audioCtx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime+0.12);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.15);
+  osc.connect(g).connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime+0.16);
+}
+
+function playWhoosh(){
+  if (!audioCtx) return;
+  const bufferSize = audioCtx.sampleRate*0.4;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass'; filter.Q.value = 4;
+  filter.frequency.setValueAtTime(400, audioCtx.currentTime);
+  filter.frequency.exponentialRampToValueAtTime(3200, audioCtx.currentTime+0.35);
+  const g = audioCtx.createGain();
+  g.gain.value = 0.35;
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.38);
+  src.connect(filter).connect(g).connect(audioCtx.destination);
+  src.start(); src.stop(audioCtx.currentTime+0.4);
+}
+
+function playWhistle(){
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  osc.type = 'square';
+  const g = audioCtx.createGain();
+  g.gain.value = 0.18;
+  osc.frequency.setValueAtTime(2100, audioCtx.currentTime);
+  osc.frequency.setValueAtTime(1800, audioCtx.currentTime+0.15);
+  osc.frequency.setValueAtTime(2100, audioCtx.currentTime+0.3);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.5);
+  osc.connect(g).connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime+0.5);
+}
+
+// ================================================================ LOOP
+function endMatch(){
+  matchRunning = false;
+  document.getElementById('finalDodges').textContent = dodgeCount;
+  document.getElementById('endScreen').style.display = 'flex';
+  playWhistle();
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(0.05, clock.getDelta());
+  const t = performance.now()*0.001;
+
+  if (matchRunning){
+    matchTime += dt*TIME_SCALE;
+    if (matchTime >= MATCH_DURATION){ matchTime = MATCH_DURATION; endMatch(); }
+
+    const active = userTeam[activeIndex];
+    const mv = readMoveVector();
+    if (mv.x!==0 || mv.z!==0){
+      const dir = new THREE.Vector3(mv.x, 0, mv.z).normalize();
+      active.vel.set(dir.x*active.speed, 0, dir.z*active.speed);
+      active.pos.addScaledVector(dir, active.speed*dt);
+      active.facing.copy(dir);
+      clampToField(active.pos);
+    } else {
+      active.vel.set(0,0,0);
+    }
+    handleActions(dt, active);
+
+    updateUserTeammates(dt, active);
+    if (kickoffTimer > 0) kickoffTimer -= dt;
+    else updateAIOpponents(dt);
+    updateBall(dt);
+    checkGoalDodge(goals.left);
+    checkGoalDodge(goals.right);
+    updateGoal(goals.left, dt);
+    updateGoal(goals.right, dt);
+
+    updateCamera(dt);
+    updateHUD();
+  }
+
+  players.forEach(p => animatePlayer(p, dt, t));
+  renderer.render(scene, camera);
+}
+</script>
+</body>
+</html>
