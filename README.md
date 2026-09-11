@@ -56,7 +56,7 @@ For Software:
 ![Screenshot1](1.png)
 *DOLESS AI hero and homework input — the entry point where the avoidance begins*
 
-![Screenshot2](Add screenshot 2 here with proper name)
+![Screenshot2](Fake_AI_Terminal.png)
 *The fake AI terminal typing out its eleven-step diagnostic, followed by the full analysis dashboard*
 
 ![Screenshot3](Football_stadium.png)
