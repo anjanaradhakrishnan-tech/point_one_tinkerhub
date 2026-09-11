@@ -62,6 +62,7 @@ For Software:
 ![Screenshot3](Football_stadium.png)
 *The Unscoreable Football Challenge — 3D stadium, live scoreboard, and goalposts mid-flee*
 
+
 # Diagrams
 ![Workflow](Add your workflow/architecture diagram here)
 *User flow: Homework input → Terminal → Analysis → Dashboard → Final Directive card → game.html → Back link → index.html*
