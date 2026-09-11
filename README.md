@@ -53,7 +53,7 @@ npx serve .
 For Software:
 
 # Screenshots (Add at least 3)
-![Screenshot1](1.png)
+![Screenshot1](doleess_ai_entry_point.png)
 *DOLESS AI hero and homework input — the entry point where the avoidance begins*
 
 ![Screenshot2](Fake_AI_Terminal.png)
